@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>chara</title>
+    <style>
+      .stage {
+        position: relative;
+        width: 600px;
+        height: 240px;
+        margin: 24px auto;
+        border: 2px solid #333;
+        background: #f6f8ff;
+        overflow: hidden;
+      }
+      #box {
+        position: absolute;
+        width: 48px;
+        height: 48px;
+        background: #ff6b6b; /* 初期色は赤 */
+        border-radius: 8px;
+        transition: background 0.1s; /* 色の変化を滑らかに */
+      }
+    </style>
+  </head>
+  <body>
+    <p style="text-align: center">← / → で移動、Space でジャンプします</p>
+    
+    <div class="stage" id="stage">
+        <div id="box"></div>
+    </div>
+    
+    <div id="log" style="text-align: center;">
+        <span>Spaceキー状態: </span><strong id="loglist">OFF</strong>
+    </div>
+
+    <script>
+     const box = document.getElementById("box");
+const logSpace = document.getElementById("loglist");
+
+// 地面のY座標（ステージの高さ240 - ボックスの高さ48）
+const groundY = 240 - 48; 
+
+// 【修正】player構造体（オブジェクト）の定義
+const player = {
+  x: 50,            // 横の初期位置
+  y: groundY,       // 縦の初期位置
+  speed: 4,         // 左右の移動速度
+  Dash: 4 + 5,      // 【修正】speedではなく数値を直接指定（4 + 5 = 9）
+  jumpPower: -10    // ジャンプ初速
+};
+
+const gravity = 0.5;   // 重力
+let velocityY = 0;     // Y軸方向の速度
+let isGrounded = true; // 接地フラグ
+
+const keys = {};
+
+// キーの入力状態を記録
+document.addEventListener("keydown", (e) => {
+  keys[e.code] = true;
+});
+  
+document.addEventListener("keyup", (e) => {
+  keys[e.code] = false;
+});
+
+// 画面の更新（DOMのスタイル操作）
+function draw() {
+  box.style.left = player.x + "px";
+  box.style.top = player.y + "px";
+}
+
+// 毎フレームの状態更新
+function update() {
+  // 【修正】"Z" ではなく "KeyZ" に修正（e.codeの仕様に合わせる）
+  if (keys["KeyZ"]) {
+    player.speed = player.Dash;
+  } else {
+    player.speed = 4;
+  }
+
+  // 【修正】playe.x になっていたタイポを player.x に修正
+  if (keys["ArrowRight"]) {
+    player.x += player.speed;
+  }
+  if (keys["ArrowLeft"]) {
+    player.x -= player.speed;
+  }
+
+  // ジャンプ処理とログ表示
+  if (keys["Space"]) {
+    logSpace.innerText = "ON";
+    if (isGrounded) {
+      velocityY = player.jumpPower; // 上向きの初速を与える
+      isGrounded = false;
+      box.style.background = '#ff6b6b'; // ジャンプしたら赤に戻す
+    }
+  } else {
+    logSpace.innerText = "OFF";
+  }
+
+  // 接地していない（空中）のときだけ重力を加え、座標を動かす
+  if (!isGrounded) {
+    velocityY += gravity;
+    player.y += velocityY;
+  }
+
+  // 【修正】x や y 単体ではなく player.x / player.y を更新するように修正
+  // 左右の壁制限
+  if (player.x < 0) player.x = 0;
+  if (player.x > 600 - 48) player.x = 600 - 48;
+  
+  // 地面との当たり判定
+  if (player.y >= groundY) {
+    player.y = groundY;   // 位置を地面に固定
+    velocityY = 0;        // 速度をゼロに
+    if (!isGrounded) {
+      isGrounded = true;  // 接地状態に戻す
+      box.style.background = '#0ff00f'; // 着地したら緑色にする
+    }
+  }
+  
+  // 天井の制限
+  if (player.y < 0) {
+    player.y = 0;
+    velocityY = 0; // 天井にぶつかったら下落に転じる
+  }
+
+  // 再描画
+  draw();
+}
+
+
+
+
+      // 16ミリ秒ごとにアップデート（約60FPS）
+      setInterval(update, 16);
+    </script>
+  </body>
+</html>
